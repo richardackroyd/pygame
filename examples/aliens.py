@@ -8,14 +8,14 @@ from pygame.locals import *
 
 #see if we can load more than standard BMP
 if not pygame.image.get_extended():
-    raise SystemExit("Sorry, extended image module required")
+    raise SystemExit("Sorry, extended image module reqred")
 
 
 #game constants
 MAX_SHOTS      = 2      #most player bullets onscreen
 ALIEN_ODDS     = 22     #chances a new alien appears
 BOMB_ODDS      = 60    #chances a new bomb will drop
-ALIEN_RELOAD   = 12     #frames between new aliens
+ALIEN_RELOAD   = 500     #frames between new aliens
 SCREENRECT     = Rect(0, 0, 640, 480)
 SCORE          = 0
 
@@ -66,6 +66,8 @@ class Player(pygame.sprite.Sprite):
     bounce = 24
     gun_offset = -11
     images = []
+    v = 8
+    m = 2
     def __init__(self):
         pygame.sprite.Sprite.__init__(self, self.containers)
         self.image = self.images[0]
@@ -88,28 +90,37 @@ class Player(pygame.sprite.Sprite):
         pos = self.facing*self.gun_offset + self.rect.centerx
         return pos, self.rect.top
 
+    def jump(self):
+        self.rect.move_ip(0,-50)
 
 class Alien(pygame.sprite.Sprite):
     speed = 13
     animcycle = 12
     images = []
+    counter = 0
     def __init__(self):
         pygame.sprite.Sprite.__init__(self, self.containers)
         self.image = self.images[0]
         self.rect = self.image.get_rect()
-        self.facing = random.choice((-1,1)) * Alien.speed
+#        self.facing = Alien.speed
         self.frame = 0
-        if self.facing < 0:
-            self.rect.right = SCREENRECT.right
+#        if self.facing < 0:
+#            self.rect.right = SCREENRECT.right
+#        self.facing = 1
 
     def update(self):
-        self.rect.move_ip(self.facing, 0)
-        if not SCREENRECT.contains(self.rect):
-            self.facing = -self.facing;
-            self.rect.top = self.rect.bottom + 1
+        self.counter = self.counter + 1
+        if self.counter==50:
+            self.rect.move_ip(self.speed, 0)
+#        if not SCREENRECT.contains(self.rect):
+#            self.facing = -self.facing;
+#            self.rect.top = self.rect.bottom + 1
+#            self.rect = self.rect.clamp(SCREENRECT)
+            self.rect.top = self.rect.top+10
             self.rect = self.rect.clamp(SCREENRECT)
-        self.frame = self.frame + 1
-        self.image = self.images[self.frame//self.animcycle%3]
+            self.frame = self.frame + 1
+            self.image = self.images[self.frame//self.animcycle%1]
+            self.counter = 0
 
 
 class Explosion(pygame.sprite.Sprite):
@@ -190,11 +201,11 @@ def main(winstyle = 0):
 
     #Load images, assign to sprite classes
     #(do this before the classes are used, after screen setup)
-    img = load_image('player1.gif')
+    img = load_image('unicorn.gif')
     Player.images = [img, pygame.transform.flip(img, 1, 0)]
     img = load_image('explosion1.gif')
     Explosion.images = [img, pygame.transform.flip(img, 1, 1)]
-    Alien.images = load_images('alien1.gif', 'alien2.gif', 'alien3.gif')
+    Alien.images = load_images('alien1.gif')
     Bomb.images = [load_image('bomb.gif')]
     Shot.images = [load_image('shot.gif')]
 
@@ -267,11 +278,17 @@ def main(winstyle = 0):
         #handle player input
         direction = keystate[K_RIGHT] - keystate[K_LEFT]
         player.move(direction)
+        jump = keystate[K_UP]
+        if jump:
+            player.jump()
         firing = keystate[K_SPACE]
-        if not player.reloading and firing and len(shots) < MAX_SHOTS:
-            Shot(player.gunpos())
-            shoot_sound.play()
-        player.reloading = firing
+#        if firing:
+#            Jump(player)
+
+#        if not player.reloading and firing and len(shots) < MAX_SHOTS:
+#            Shot(player.gunpos())
+#            shoot_sound.play()
+#        player.reloading = firing
 
         # Create new alien
         if alienreload:
@@ -280,9 +297,9 @@ def main(winstyle = 0):
             Alien()
             alienreload = ALIEN_RELOAD
 
-        # Drop bombs
-        if lastalien and not int(random.random() * BOMB_ODDS):
-            Bomb(lastalien.sprite)
+#        # Drop bombs
+#        if lastalien and not int(random.random() * BOMB_ODDS):
+#            Bomb(lastalien.sprite)
 
         # Detect collisions
         for alien in pygame.sprite.spritecollide(player, aliens, 1):
